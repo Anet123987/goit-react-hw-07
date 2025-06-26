@@ -1,58 +1,81 @@
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import { useDispatch } from 'react-redux';
-import { addContact } from '../../redux/contactsSlice';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from '../../redux/contactsOps';
+import {
+  selectContacts,
+  selectLoading,
+  selectError,
+} from '../../redux/contactsSlice';
 import css from './ContactForm.module.css';
 
-const ContactForm = () => {
+const ContactsForm = () => {
   const dispatch = useDispatch();
+  const contacts = useSelector(selectContacts);
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
 
-  const schema = Yup.object({
-    name: Yup.string()
-      .min(3, 'Мінімум 3 символи')
-      .max(50, 'Максимум 50 символів')
-      .required('Обов’язкове поле'),
-    number: Yup.string()
-      .matches(
-        /^[0-9\s\-()+]+$/,
-        'Номер може містити лише цифри, пробіли, дужки, тире, плюс'
-      )
-      .min(5, 'Мінімум 5 символів')
-      .max(20, 'Максимум 20 символів')
-      .required('Обов’язкове поле'),
-  });
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
 
-  const handleSubmit = (values, actions) => {
-    dispatch(addContact({
-      name: values.name.trim(),
-      number: values.number.trim(),
-    }));
-    actions.resetForm();
+  const handleChange = e => {
+    const { name, value } = e.target;
+    if (name === 'name') setName(value);
+    if (name === 'number') setNumber(value);
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+
+    const isDuplicate = contacts.some(
+      contact => contact.name.toLowerCase() === name.toLowerCase()
+    );
+    if (isDuplicate) {
+      alert(`${name} вже є в контактах.`);
+      return;
+    }
+
+    dispatch(addContact({ name, number }));
+
+    setName('');
+    setNumber('');
   };
 
   return (
-    <Formik
-      initialValues={{ name: '', number: '' }}
-      validationSchema={schema}
-      onSubmit={handleSubmit}
-    >
-      <Form className={css.form}>
-        <div>
-          <label className={css.label} htmlFor="name">Name</label><br />
-          <Field className={css.input} name="name" type="text" />
-          <ErrorMessage name="name" component="div" className={css.error} />
-        </div>
+    <form onSubmit={handleSubmit} className={css.form}>
+      <label className={css.label}>
+        Ім'я
+        <input
+          className={css.input}
+          type="text"
+          name="name"
+          value={name}
+          onChange={handleChange}
+          pattern="^[a-zA-Zа-яА-ЯёЁіІїЇєЄґҐ\s'-]+$"
+          title="Ім'я може містити лише літери, апостроф, дефіс і пробіли."
+          required
+        />
+      </label>
+      <label className={css.label}>
+        Номер телефону
+        <input
+          className={css.input}
+          type="tel"
+          name="number"
+          value={number}
+          onChange={handleChange}
+          pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
+          title="Номер телефону повинен містити цифри і може містити пробіли, дефіси, дужки та починатися з +"
+          required
+        />
+      </label>
 
-        <div>
-          <label className={css.label} htmlFor="number">Number</label><br />
-          <Field className={css.input} name="number" type="text" />
-          <ErrorMessage name="number" component="div" className={css.error} />
-        </div>
+      <button type="submit" className={css.button} disabled={loading}>
+        {loading ? 'Завантаження...' : 'Додати контакт'}
+      </button>
 
-        <button type="submit" className={css.button}>Add Contact</button>
-      </Form>
-    </Formik>
+      {error && <p className={css.error}>Помилка: {error}</p>}
+    </form>
   );
 };
 
-export default ContactForm;
+export default ContactsForm;

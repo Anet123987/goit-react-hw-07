@@ -2,20 +2,28 @@ import { useSelector } from 'react-redux';
 import ContactItem from '../Contact/Contact';
 import styles from './ContactList.module.css';
 
-const ContactList = () => {
-  const contacts = useSelector(state => state.contacts.items);
-  const filter = useSelector(state => state.filters.name);
+import {
+  selectFilteredContacts,
+  selectLoading,
+  selectError,
+} from '../../redux/contactsSlice';
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
+const ContactList = () => {
+  const filteredContacts = useSelector(selectFilteredContacts);
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
 
   return (
-    <ul className={styles.list}>
-      {filteredContacts.map(contact => (
-        <ContactItem key={contact.id} contact={contact} />
-      ))}
-    </ul>
+    <>
+      {loading && <p className={styles.message}>Завантаження...</p>}
+      {error && <p className={styles.error}>Помилка: {error}</p>}
+
+      <ul className={styles.list}>
+        {filteredContacts.map(contact => (
+          <ContactItem key={contact.id} contact={contact} />
+        ))}
+      </ul>
+    </>
   );
 };
 

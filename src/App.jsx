@@ -1,47 +1,35 @@
-import { useEffect, useState } from 'react';
-import { nanoid } from 'nanoid';
-import ContactForm from './components/ContactForm/ContactForm';
-import ContactList from './components/ContactList/ContactList';
-import SearchBox from './components/SearchBox/SearchBox';
-import { initialContacts } from './data/initialContacts';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchContacts } from '../redux/contactsOps';
+import { selectLoading, selectError } from '../redux/contactsSlice';
+import ContactsForm from '../ContactsForm/ContactsForm';
+import ContactList from '../ContactList/ContactList';
+import SearchBox from '../SearchBox/SearchBox';
 
-function App() {
-  const [contacts, setContacts] = useState(() => {
-    const stored = localStorage.getItem('contacts');
-    return stored ? JSON.parse(stored) : initialContacts;
-  });
+import styles from './App.module.css'; 
 
-  const [filter, setFilter] = useState('');
+const App = () => {
+  const dispatch = useDispatch();
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
 
   useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
-
-  const handleAddContact = (newContact) => {
-    const contactWithId = { ...newContact, id: nanoid() };
-    setContacts((prev) => [...prev, contactWithId]);
-  };
-
-  const handleDeleteContact = (id) => {
-    setContacts((prev) => prev.filter(contact => contact.id !== id));
-  };
-
-  const handleFilterChange = (value) => {
-    setFilter(value);
-  };
-
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
+    dispatch(fetchContacts());
+  }, [dispatch]);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Phonebook</h1>
-      <ContactForm onAddContact={handleAddContact} />
-      <SearchBox filter={filter} onFilterChange={handleFilterChange} />
-      <ContactList contacts={filteredContacts} onDelete={handleDeleteContact} />
+    <div className={styles.container}>
+      <h1 className={styles.title}>Книга контактів</h1>
+
+      <ContactsForm />
+      <SearchBox />
+
+      {loading && <p className={styles.loading}>Завантаження контактів...</p>}
+      {error && <p className={styles.error}>Помилка: {error}</p>}
+
+      <ContactList />
     </div>
   );
-}
+};
 
 export default App;
